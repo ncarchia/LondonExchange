@@ -7,5 +7,6 @@ namespace LondonExchange.Services
     Task<IEnumerable<LondonExchangeTransaction>?> GetAllStockTransactions();
     Task<StockValue?> GetStockValue(string tickerSymbol);
     Task<IEnumerable<StockValue>> GetStocksValue(string? tickerSymbols = null);
+    Task<LondonExchangeTransaction>? PersistSingleTransaction(LondonExchangeTransaction transaction);
   }
 }

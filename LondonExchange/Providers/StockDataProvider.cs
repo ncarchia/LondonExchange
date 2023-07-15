@@ -1,4 +1,5 @@
-﻿using LondonExchange.Models;
+﻿using LondonExchange.DatabaseContext;
+using LondonExchange.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LondonExchange.Services
@@ -71,6 +72,19 @@ namespace LondonExchange.Services
       }
     }
 
+    public async Task<LondonExchangeTransaction>? PersistSingleTransaction(LondonExchangeTransaction transaction)
+    {
+      return await PersistTransaction(transaction);
+      //try
+      //{
+      //  return await PersistTransaction(transaction);
+      //}
+      //catch (Exception)
+      //{
+      //  throw;
+      //}
+    }
+
     private async Task<IEnumerable<LondonExchangeTransaction>?> GetAllTransactions()
       => _context.LondonExchangeTransactions != null
       ? await _context.LondonExchangeTransactions.ToListAsync()
@@ -83,5 +97,16 @@ namespace LondonExchange.Services
 
     private static IEnumerable<string>? GetTickerSymbols(string? tickerSymbols)
       => tickerSymbols?.Split(',').ToList();
+
+    private async Task<LondonExchangeTransaction>? PersistTransaction(LondonExchangeTransaction entity)
+    {
+      if (entity != null)
+      {
+        await _context.AddAsync(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+      }
+      return null;
+    }
   }
 }

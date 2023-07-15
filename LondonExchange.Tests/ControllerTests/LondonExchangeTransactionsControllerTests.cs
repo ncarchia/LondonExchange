@@ -1,7 +1,9 @@
-﻿using LondonExchange.Controllers;
+﻿using FluentValidation;
+using LondonExchange.Controllers;
 using LondonExchange.Models;
 using LondonExchange.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace LondonExchange.Tests.ControllerTests
@@ -10,10 +12,12 @@ namespace LondonExchange.Tests.ControllerTests
   {
     private readonly LondonExchangeTransactionsController _controller;
     private readonly Mock<IStockDataProvider> _dataProvider = new();
+    private readonly Mock<IValidator<LondonExchangeTransaction>> _validator = new();
+    Mock<ILogger<LondonExchangeTransactionsController>> _mockLogger = new();
 
     public LondonExchangeTransactionsControllerTests()
     {
-      _controller = new LondonExchangeTransactionsController(_dataProvider.Object);
+      _controller = new LondonExchangeTransactionsController(_dataProvider.Object, _validator.Object, _mockLogger.Object);
     }
 
     [Fact]
@@ -45,12 +49,25 @@ namespace LondonExchange.Tests.ControllerTests
     }
 
     [Fact]
-    public async void GetLondonExchangeTransactions_GivenAnExceptionIsThrown_ShouldThrowException()
+    public async void GetLondonExchangeTransactions_GivenAnExceptionIsThrown_ShouldThrowGenericException()
     {
       object value = _dataProvider.Setup(dp => dp.GetStockValue(It.IsAny<string>()))
-        .ThrowsAsync(new Exception());
+        .ThrowsAsync(new Exception("Internal Server Error from the custom middleware."));
 
-      await Assert.ThrowsAsync<Exception>(() => _controller.GetStocksValue(It.IsAny<string>()));
+      var ex = await Assert.ThrowsAsync<Exception>(async () => await _controller.GetStocksValue(It.IsAny<string>()));
+
+      Assert.Equal("Internal Server Error from the custom middleware.", ex.Message);
+    }
+
+    [Fact]
+    public async void GetLondonExchangeTransactions_GivenAnExceptionIsThrown_ShouldThrowAccessViolationException()
+    {
+      object value = _dataProvider.Setup(dp => dp.GetStockValue(It.IsAny<string>()))
+        .ThrowsAsync(new AccessViolationException("Access violation error from the custom middleware."));
+
+      var ex = await Assert.ThrowsAsync<AccessViolationException>(async () => await _controller.GetStocksValue(It.IsAny<string>()));
+
+      Assert.Equal("Access violation error from the custom middleware.", ex.Message);
     }
 
     [Fact]
